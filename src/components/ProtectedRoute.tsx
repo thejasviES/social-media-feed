@@ -11,8 +11,7 @@ interface ProtectedRouteProps {
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const navigate = useNavigate();
   const { isLoading, isAuthenticated } = useUser();
-  console.log("isLoading", isLoading);
-  console.log("isAuthenticated", isAuthenticated);
+
   useEffect(
     function () {
       if (!isAuthenticated && !isLoading) navigate("/signin");

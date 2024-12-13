@@ -23,8 +23,7 @@ export const FeedComponent = () => {
     initialPageParam: undefined as string | undefined,
   });
 
-  console.log("data", data);
-  // Load more when the last element comes into view
+
   useEffect(() => {
     if (inView && hasNextPage && !isFetchingNextPage) {
       fetchNextPage();

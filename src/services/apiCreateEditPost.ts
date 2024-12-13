@@ -2,7 +2,6 @@ import { supabase, supabaseUrl } from "../lib/supabase";
 import { PostData } from "../types/post";
 
 export async function createEditPost(postData : PostData) {
-  // Helper function to get aspect ratio
   const getAspectRatio = async (file:any) => {
     return new Promise((resolve) => {
       if (file.type?.startsWith('video')) {
@@ -18,12 +17,10 @@ export async function createEditPost(postData : PostData) {
   };
 
   try {
-    console.log('Processing post data:', { content: postData.content, mediaCount: postData.media?.length });
 
-    // 1. Process media files
     const mediaFiles = await Promise.all(
       (postData.media || []).map(async (media, index) => {
-        // Check if media is already a URL (existing media)
+
         if ('url' in media && media.url && media.url.startsWith(supabaseUrl)) {
           return {
             url: media.url,
@@ -31,8 +28,6 @@ export async function createEditPost(postData : PostData) {
             aspect_ratio: media.aspect_ratio
           };
         }
-
-        // Handle new file upload
         const file = 'file' in media ? media.file : media;
         if (!file) {
           console.error('Invalid media item:', media);
@@ -54,7 +49,6 @@ export async function createEditPost(postData : PostData) {
       })
     );
 
-    // 2. Create/edit post
     const postPayload = {
       content: postData.content,
       user_id: postData.userId
@@ -71,14 +65,12 @@ export async function createEditPost(postData : PostData) {
       throw new Error("Post could not be created");
     }
 
-    // 3. Upload media files
+    
     const mediaPromises = mediaFiles.map(async (media) => {
-      // Skip upload for existing files
       if (media.url.startsWith(supabaseUrl) && !media.file) {
         return media;
       }
 
-      // Upload new file
       const { error: storageError } = await supabase.storage
         .from("post-media")
         .upload(media.fileName, media.file as unknown as File);
@@ -92,10 +84,6 @@ export async function createEditPost(postData : PostData) {
     });
 
     const uploadedMedia = await Promise.all(mediaPromises);
-
-    // 4. Handle media records
-  
-    // Create new media records
     const { error: mediaError } = await supabase.from("post_media").insert(
       uploadedMedia.map((media) => ({
         post_id: post.id,
@@ -107,7 +95,6 @@ export async function createEditPost(postData : PostData) {
 
     if (mediaError) {
       console.error('Media record error:', mediaError);
-      // Rollback: delete post and uploaded files
       await supabase.from("posts").delete().eq("id", post.id);
       await Promise.all(
         uploadedMedia.map((media) =>
@@ -117,7 +104,6 @@ export async function createEditPost(postData : PostData) {
       throw new Error("Failed to create media records");
     }
 
-    // 5. Fetch complete post
     const { data: completePost, error: fetchError } = await supabase
       .from("posts")
       .select(`
