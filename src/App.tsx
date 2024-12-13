@@ -71,15 +71,6 @@ const router = createBrowserRouter([
     errorElement: <ClientError />,
   },
   {
-    path: "/profile",
-    element: (
-      <ProtectedRoute>
-        <Profile />
-      </ProtectedRoute>
-    ),
-    errorElement: <ClientError />,
-  },
-  {
     path: "profile/edit",
     element: (
       <ProtectedRoute>
