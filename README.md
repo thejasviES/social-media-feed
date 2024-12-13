@@ -1,50 +1,41 @@
-# React + TypeScript + Vite
+# Social Media Application
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A modern social media application built with cutting-edge technologies.
 
-Currently, two official plugins are available:
+🌐 **Live Demo**: [Visit the Website](https://social-media-feed-thejasvi.vercel.app/)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Tech Stack
 
-## Expanding the ESLint configuration
+### Frontend
+- **React + Vite**: Built with TypeScript for a robust development experience
+- **Tailwind CSS**: For utility-first styling and responsive design
+- **TanStack Query**: For efficient server state management and data fetching
+- **Zustand**: Lightweight state management solution
+- **shadcn/ui**: Beautifully designed components built with Radix UI and Tailwind CSS
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+### Backend & Database
+- **Supabase**:
+  - Authentication system for secure user management
+  - PostgreSQL database with Row Level Security (RLS)
+  - Storage buckets for media file management
+  - Fine-grained authorization policies
 
-- Configure the top-level `parserOptions` property like this:
-
-```js
-export default tseslint.config({
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
-```
-
-- Replace `tseslint.configs.recommended` to `tseslint.configs.recommendedTypeChecked` or `tseslint.configs.strictTypeChecked`
-- Optionally add `...tseslint.configs.stylisticTypeChecked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and update the config:
-
-```js
-// eslint.config.js
-import react from 'eslint-plugin-react'
-
-export default tseslint.config({
-  // Set the react version
-  settings: { react: { version: '18.3' } },
-  plugins: {
-    // Add the react plugin
-    react,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended rules
-    ...react.configs.recommended.rules,
-    ...react.configs['jsx-runtime'].rules,
-  },
-})
-```
+## Features
+- **Authentication & Security**:
+  - Email/Password login
+  - Social login with Google
+  - Row Level Security for data protection
+  - Proper authorization checks
+- **Media Management**:
+  - Multiple photo/video uploads
+  - Media storage and organization
+  - Share posts across multiple social platforms
+- **Profile Customization**:
+  - Update profile name and bio
+  - Customize profile picture
+  - Personalize profile banner
+- **Advanced Data Fetching**:
+  - Infinite scrolling using TanStack Query
+  - Efficient data pagination
+- Responsive design
+- Type-safe development
