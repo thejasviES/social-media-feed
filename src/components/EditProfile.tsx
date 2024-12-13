@@ -10,8 +10,9 @@ import { z } from "zod";
 import toast from "react-hot-toast";
 
 import { useUpdateUserProfile, useUserProfile } from "../hooks/useUserProfile";
-import { Profile } from "../types/profile";
+import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
+import Loading from "./Loading";
 
 export const profileSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -27,7 +28,8 @@ interface EditProfileProps {
   onBack?: () => void;
 }
 
-export function EditProfile({ userID, onBack }: EditProfileProps) {
+export function EditProfile({ userID }: EditProfileProps) {
+  const queryClient = useQueryClient();
   const [isSaving, setIsSaving] = useState(false);
   const navigate = useNavigate();
   const { data: profile, isLoading: profileLoading } = useUserProfile(userID);
@@ -39,10 +41,10 @@ export function EditProfile({ userID, onBack }: EditProfileProps) {
     banner_url: "",
   });
 
-  console.log("formValues", formValues);
+
   // Update form values when profile loads
   useEffect(() => {
-    console.log("profile123", profile);
+ 
     if (profile) {
       const newValues = {
         name: profile.data.full_name || "",
@@ -107,7 +109,10 @@ export function EditProfile({ userID, onBack }: EditProfileProps) {
         },
         {
           onSuccess: () => {
+            //invaliodate query
+            queryClient.invalidateQueries({ queryKey: ["profile", userID] });
             toast.success("Profile updated successfully");
+            navigate("/profile", { replace: true });
           },
           onError: (error) => {
             console.error("Error in onSubmit:", error);
@@ -123,12 +128,12 @@ export function EditProfile({ userID, onBack }: EditProfileProps) {
     }
   };
 
-  if (profileLoading) return <div>Loading...</div>;
+  if (profileLoading) return <Loading />;
 
   return (
-    <div className="min-h-screen bg-white">
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        <div className="relative">
+    <div className="min-h-screen bg-white rounded-lg flex flex-col">
+      <form onSubmit={handleSubmit(onSubmit)} className="flex-1 flex flex-col">
+        <div className="relative rounded-lg overflow-hidden">
           {/* Banner Image */}
           <div className="relative h-48 md:h-64 bg-muted">
             <div className="absolute inset-x-0 top-0 flex items-center gap-4 p-4 bg-background/80 z-50 text-white hover:text-black">
@@ -138,12 +143,17 @@ export function EditProfile({ userID, onBack }: EditProfileProps) {
               >
                 <ArrowLeft className="w-6 h-6 text-white" />
               </button>
-              {/* <h1 className="text-xl font-semibold">Edit Profile</h1> */}
             </div>
-            {currentValues.banner_url && (
+            {currentValues.banner_url ? (
               <img
                 src={currentValues.banner_url}
                 alt="Banner"
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <img
+                src="https://images.unsplash.com/photo-1557683311-eac922347aa1?w=1000&h=400&fit=crop"
+                alt="Default Banner"
                 className="w-full h-full object-cover"
               />
             )}
@@ -172,15 +182,16 @@ export function EditProfile({ userID, onBack }: EditProfileProps) {
           </div>
 
           {/* Avatar */}
-          <div className="relative -mt-16 ml-4">
-            <div className="relative h-32 w-32 rounded-full border-4 border-background bg-muted overflow-hidden">
-              {currentValues.avatar_url && (
-                <img
-                  src={currentValues.avatar_url}
-                  alt="Avatar"
-                  className="w-full h-full object-cover"
-                />
-              )}
+          <div className="relative -mt-24 ml-4">
+            <div className="relative h-32 w-32 rounded-full overflow-hidden border-4 border-background">
+              <img
+                src={
+                  currentValues.avatar_url ||
+                  `https://api.dicebear.com/7.x/bottts/svg?seed=${userID}&backgroundColor=b6e3f4`
+                }
+                alt="Profile picture"
+                className="w-full h-full object-cover"
+              />
               <Button
                 variant="ghost"
                 size="icon"
@@ -243,14 +254,16 @@ export function EditProfile({ userID, onBack }: EditProfileProps) {
         </div>
 
         {/* Save Button */}
-        <div className="rounded-full bg-black backdrop-blur-sm border-t">
-          <Button
-            type="submit"
-            className="w-full text-white"
-            disabled={isSaving || isUploadingAvatar || isUploadingBanner}
-          >
-            {isSaving ? "Saving..." : "Save"}
-          </Button>
+        <div className="mt-auto ">
+          <div className="px-4 py-4">
+            <Button
+              type="submit"
+              className="w-full text-white bg-black hover:bg-black/90 rounded-full"
+              disabled={isSaving || isUploadingAvatar || isUploadingBanner}
+            >
+              {isSaving ? "Saving..." : "Save"}
+            </Button>
+          </div>
         </div>
       </form>
     </div>

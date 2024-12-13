@@ -11,7 +11,7 @@ export async function signup({ fullName, email, password }: {
     password,
     options: {
       data: {
-       fullName,
+       name:fullName,
       },
     },
   });

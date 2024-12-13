@@ -3,21 +3,43 @@ import { useDropzone } from "react-dropzone";
 import { DndProvider, useDrag, useDrop } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import Webcam from "react-webcam";
-
 import { Button } from "../components/ui/button";
 import { Textarea } from "../components/ui/textarea";
-import { Card, CardContent } from "../components/ui/card";
-import { X, Camera, Image as ImageIcon, RotateCw, Loader2 } from "lucide-react";
+import {
+  ArrowLeft,
+  Camera,
+  Image as ImageIcon,
+  RotateCw,
+  Loader2,
+  X,
+} from "lucide-react";
 import { usePostOperations } from "../hooks/usePostCreation";
-import { PostData } from "../types/post";
 import toast from "react-hot-toast";
 import { useAuthStore } from "../store/authStore";
+import { useNavigate } from "react-router-dom";
+import { PostData } from "../types/post";
+import { QueryClient } from "@tanstack/react-query";
+interface Media {
+  file?: File;
+  url?: string;
+  aspect_ratio?: number;
+}
 
 interface MediaItemProps {
-  media: { file?: File; url?: string };
+  media: Media;
   index: number;
   moveMedia: (dragIndex: number, hoverIndex: number) => void;
   removeMedia: (index: number) => void;
+}
+
+interface DragItem {
+  index: number;
+  type: string;
+}
+
+interface CreatePostProps {
+  postId?: string;
+  onSuccess?: () => void;
 }
 
 const MediaItem: React.FC<MediaItemProps> = ({
@@ -28,9 +50,9 @@ const MediaItem: React.FC<MediaItemProps> = ({
 }) => {
   const ref = useRef<HTMLDivElement>(null);
 
-  const [, drop] = useDrop({
+  const [, drop] = useDrop<DragItem, void>({
     accept: "media",
-    hover(item: { index: number }, monitor) {
+    hover(item: DragItem) {
       if (!ref.current) return;
       const dragIndex = item.index;
       const hoverIndex = index;
@@ -42,7 +64,7 @@ const MediaItem: React.FC<MediaItemProps> = ({
 
   const [{ isDragging }, drag] = useDrag({
     type: "media",
-    item: { index },
+    item: { index, type: "media" },
     collect: (monitor) => ({
       isDragging: monitor.isDragging(),
     }),
@@ -50,32 +72,29 @@ const MediaItem: React.FC<MediaItemProps> = ({
 
   drag(drop(ref));
 
-  const isVideo =
-    media.file?.type.startsWith("video") || media.url?.includes("video");
-
   return (
     <div
       ref={ref}
-      className={`relative rounded-lg overflow-hidden h-32 ${
+      className={`relative rounded-lg overflow-hidden aspect-square w-full h-32 ${
         isDragging ? "opacity-50" : "opacity-100"
       }`}
     >
-      {isVideo ? (
+      {media.file?.type?.startsWith("video") || media.url?.includes("video") ? (
         <video
-          src={media.url || URL.createObjectURL(media.file!)}
+          src={media.url || (media.file ? URL.createObjectURL(media.file) : "")}
           className="w-full h-full object-cover"
           controls
         />
       ) : (
         <img
-          src={media.url || URL.createObjectURL(media.file!)}
-          alt="Uploaded media"
+          src={media.url || (media.file ? URL.createObjectURL(media.file) : "")}
+          alt="Upload preview"
           className="w-full h-full object-cover"
         />
       )}
       <button
         onClick={() => removeMedia(index)}
-        className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+        className="absolute top-2 right-2 bg-black/50 text-white rounded-full p-1.5"
       >
         <X size={16} />
       </button>
@@ -83,47 +102,34 @@ const MediaItem: React.FC<MediaItemProps> = ({
   );
 };
 
-export const CreatePost: React.FC<{
-  postId?: string;
-  onSuccess?: () => void;
-}> = ({ postId, onSuccess }) => {
+export const CreatePost: React.FC<CreatePostProps> = ({
+  postId,
+  onSuccess,
+}) => {
   const { user } = useAuthStore();
   const userId = user?.id;
-  console.log("user", user);
-  const [showCamera, setShowCamera] = useState(false);
+  const [showCamera, setShowCamera] = useState<boolean>(false);
   const [facingMode, setFacingMode] = useState<"user" | "environment">(
     "environment"
   );
-  const [content, setContent] = useState("");
-  const [media, setMedia] = useState<Array<{ file?: File; url?: string }>>([]);
+  const [content, setContent] = useState<string>("");
+  const [media, setMedia] = useState<Media[]>([]);
   const webcamRef = useRef<Webcam>(null);
-
+  const navigate = useNavigate();
   const { createEditPostMutation } = usePostOperations();
-
-  const handleContentChange = (value: string) => {
-    setContent(value);
-  };
-
-  const handleMediaAdd = (newMedia: Array<{ file?: File; url?: string }>) => {
-    setMedia((prev) => [...prev, ...newMedia]);
-  };
-
-  const handleMediaRemove = (index: number) => {
-    setMedia((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const handleMediaReorder = (
-    newOrder: Array<{ file?: File; url?: string }>
-  ) => {
-    setMedia(newOrder);
-  };
-
+  const queryClient = new QueryClient();
   const onDrop = useCallback((acceptedFiles: File[]) => {
-    const newMedia = acceptedFiles.map((file) => ({ file }));
-    handleMediaAdd(newMedia);
+    const newMedia: Media[] = acceptedFiles.map((file) => ({ file }));
+    setMedia((prev) => [...prev, ...newMedia]);
   }, []);
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop });
+  const { getRootProps, getInputProps } = useDropzone({
+    onDrop,
+    accept: {
+      "image/*": [],
+      "video/*": [],
+    },
+  });
 
   const moveMedia = useCallback(
     (dragIndex: number, hoverIndex: number) => {
@@ -131,27 +137,17 @@ export const CreatePost: React.FC<{
       const draggedItem = newMedia[dragIndex];
       newMedia.splice(dragIndex, 1);
       newMedia.splice(hoverIndex, 0, draggedItem);
-      handleMediaReorder(newMedia);
+      setMedia(newMedia);
     },
     [media]
   );
 
-  const handleFileUpload = () => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = "image/*,video/*";
-    input.multiple = true;
-    input.onchange = (e) => {
-      const files = Array.from((e.target as HTMLInputElement).files || []);
-      const newMedia = files.map((file) => ({ file }));
-      handleMediaAdd(newMedia);
-    };
-    input.click();
+  const handleMediaRemove = (index: number) => {
+    setMedia((prev) => prev.filter((_, i) => i !== index));
   };
 
   const capturePhoto = useCallback(() => {
     if (!webcamRef.current) return;
-
     const imageSrc = webcamRef.current.getScreenshot();
     if (imageSrc) {
       fetch(imageSrc)
@@ -160,84 +156,41 @@ export const CreatePost: React.FC<{
           const file = new File([blob], `capture-${Date.now()}.jpg`, {
             type: "image/jpeg",
           });
-          handleMediaAdd([{ file }]);
+          setMedia((prev) => [...prev, { file }]);
           setShowCamera(false);
         });
     }
   }, []);
 
-  const toggleCamera = () => {
-    setFacingMode((prev) => (prev === "user" ? "environment" : "user"));
-  };
-
-  // const handleSubmit = async () => {
-  //   try {
-  //     const postData: PostData = {
-  //       content,
-  //       userId,
-  //       media: media.map((item) => {
-  //         if (item.file) {
-  //           return item.file;
-  //         }
-  //         return { url: item.url };
-  //       }),
-  //     };
-  //     console.log("postData", postData);
-  //     await createEditPostMutation.mutateAsync(
-  //       { postData, postId },
-  //       {
-  //         onSuccess: () => {
-  //           toast.success(
-  //             postId
-  //               ? "Post updated successfully!"
-  //               : "Post created successfully!"
-  //           );
-  //           setContent("");
-  //           setMedia([]);
-  //           onSuccess?.();
-  //         },
-  //         onError: (error) => {
-  //           toast.error(
-  //             error instanceof Error ? error.message : "Failed to create post"
-  //           );
-  //         },
-  //       }
-  //     );
-  //   } catch (error) {
-  //     console.error("Error in handleSubmit:", error);
-  //   }
-  // };
   const handleSubmit = async () => {
+    if (!userId) return;
+
     try {
-      const postData = {
+      const postData: PostData = {
         content,
         userId,
-        // Transform media to match API expectations
         media: media.map((item) => {
           if (item.file) {
-            // Return the file directly without modification
             return item.file;
           }
-          // For existing media, return the URL and aspect ratio
           return {
-            url: item.url,
+            url: item.url || "",
             aspect_ratio: item.aspect_ratio,
           };
         }),
       };
 
       await createEditPostMutation.mutateAsync(
-        { postData, postId },
+        { postData },
         {
           onSuccess: () => {
-            toast.success(
-              postId
-                ? "Post updated successfully!"
-                : "Post created successfully!"
-            );
+            toast.success(postId ? "Post updated!" : "Post created!");
             setContent("");
             setMedia([]);
             onSuccess?.();
+            queryClient.invalidateQueries({ queryKey: ["feed"] });
+            queryClient.invalidateQueries({ queryKey: ["user-posts"] });
+            navigate("/feed", { replace: true });
           },
           onError: (error) => {
             toast.error(
@@ -247,9 +200,10 @@ export const CreatePost: React.FC<{
         }
       );
     } catch (error) {
-      console.error("Error in handleSubmit:", error);
+      console.error("Error:", error);
     }
   };
+
   const videoConstraints = {
     width: 1280,
     height: 720,
@@ -258,121 +212,127 @@ export const CreatePost: React.FC<{
 
   return (
     <DndProvider backend={HTML5Backend}>
-      <Card className="w-full max-w-2xl mx-auto bg-gradient-to-br from-purple-50 to-indigo-100 dark:from-gray-900 dark:to-indigo-950 shadow-xl">
-        <CardContent className="p-6">
-          <Textarea
-            value={content}
-            onChange={(e) => handleContentChange(e.target.value)}
-            placeholder="What's on your mind?"
-            className="w-full mb-4 p-4 rounded-lg border-2 border-indigo-200 dark:border-indigo-800 focus:border-indigo-500 dark:focus:border-indigo-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 transition-colors"
-            rows={4}
-          />
+      <div className="max-w-2xl flex flex-col justify-between bg-white mx-auto p-4 min-h-screen">
+        {/* Header */}
+        <div>
+          <div className="flex items-center p-4 border-b">
+            <button className="mr-4" onClick={() => navigate(-1)}>
+              <ArrowLeft size={24} />
+            </button>
+            <h1 className="text-xl font-bold flex-1">New post</h1>
+          </div>
 
-          {showCamera ? (
-            <div className="relative mb-4">
-              <Webcam
-                audio={false}
-                ref={webcamRef}
-                screenshotFormat="image/jpeg"
-                videoConstraints={videoConstraints}
-                className="w-full rounded-lg"
-              />
-              <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-4">
-                <Button
-                  onClick={capturePhoto}
-                  className="bg-green-500 hover:bg-green-600 text-white"
+          {/* Main Content */}
+          <div className="flex-1 p-4">
+            {showCamera ? (
+              <div className="relative h-full">
+                <Webcam
+                  audio={false}
+                  ref={webcamRef}
+                  screenshotFormat="image/jpeg"
+                  videoConstraints={videoConstraints}
+                  className="w-full h-full object-cover rounded-xl"
+                />
+                <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-4">
+                  <Button
+                    type="button"
+                    onClick={capturePhoto}
+                    className="bg-white"
+                  >
+                    Capture
+                  </Button>
+                  <Button
+                    onClick={() =>
+                      setFacingMode((prev) =>
+                        prev === "user" ? "environment" : "user"
+                      )
+                    }
+                    type="button"
+                    className="bg-white"
+                  >
+                    <RotateCw className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 mb-4">
+                  {media.map((item, index) => (
+                    <MediaItem
+                      key={index}
+                      media={item}
+                      index={index}
+                      moveMedia={moveMedia}
+                      removeMedia={handleMediaRemove}
+                    />
+                  ))}
+                </div>
+
+                <Textarea
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  placeholder="What's on your mind?"
+                  className="w-full p-4 border focus-visible:outline-none focus-visible:border-black focus-visible:ring-0 focus-visible:ring-ring focus-visible:ring-offset-2 focus:border-dashed focus:ring-offset-0 resize-none mb-4"
+                  rows={6}
+                />
+
+                <div
+                  {...getRootProps()}
+                  className="mb-4 border-2 border-dashed rounded-lg p-4 text-center cursor-pointer"
                 >
-                  Capture
-                </Button>
-                <Button
-                  onClick={toggleCamera}
-                  variant="outline"
-                  className="bg-white"
+                  <input {...getInputProps()} />
+                  <p>Drag & drop media here, or click to select</p>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Footer */}
+          {!showCamera && (
+            <div className="border-t p-4">
+              <div className="flex flex-col justify-start gap-4 mb-4">
+                <button
+                  onClick={() =>
+                    (
+                      document.querySelector(
+                        'input[type="file"]'
+                      ) as HTMLInputElement
+                    )?.click()
+                  }
+                  type="button"
+                  className="text-black p-0"
                 >
-                  <RotateCw className="h-4 w-4 mr-2" />
-                  Flip Camera
-                </Button>
-                <Button
-                  onClick={() => setShowCamera(false)}
-                  variant="destructive"
+                  <div className="flex gap-2">
+                    <ImageIcon className="h-6 w-6" />
+                    <span>Choose the file</span>
+                  </div>
+                </button>
+                <button
+                  onClick={() => setShowCamera(true)}
+                  className="text-black p-0"
+                  type="button"
                 >
-                  Cancel
-                </Button>
+                  <div className="flex gap-2">
+                    <Camera className="h-6 w-6" />
+                    <span>Take a photo</span>
+                  </div>
+                </button>
               </div>
             </div>
+          )}
+        </div>
+        <Button
+          onClick={handleSubmit}
+          disabled={createEditPostMutation.isPending || !content.trim()}
+          className="bg-black text-white rounded-full px-6 w-full"
+        >
+          {createEditPostMutation.isPending ? (
+            <Loader2 className="animate-spin" />
           ) : (
-            <div
-              {...getRootProps()}
-              className={`mb-4 p-6 border-2 border-dashed rounded-lg text-center cursor-pointer transition-colors ${
-                isDragActive
-                  ? "border-indigo-500 bg-indigo-100 dark:bg-indigo-900"
-                  : "border-gray-300 dark:border-gray-700 hover:border-indigo-400 dark:hover:border-indigo-600"
-              }`}
-            >
-              <input {...getInputProps()} />
-              <p className="text-gray-600 dark:text-gray-400">
-                Drag & drop media files here, or click to select files
-              </p>
-            </div>
+            "CREATE"
           )}
-
-          <div className="grid grid-cols-3 gap-4 mb-4">
-            {media.map((item, index) => (
-              <MediaItem
-                key={index}
-                media={item}
-                index={index}
-                moveMedia={moveMedia}
-                removeMedia={handleMediaRemove}
-              />
-            ))}
-          </div>
-
-          <div className="flex justify-between items-center">
-            <div className="space-x-2">
-              <Button
-                onClick={() => setShowCamera(true)}
-                variant="outline"
-                className="bg-white dark:bg-gray-800 text-indigo-600 dark:text-indigo-400 border-indigo-300 dark:border-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-900"
-              >
-                <Camera className="mr-2 h-4 w-4" />
-                Camera
-              </Button>
-              <Button
-                onClick={handleFileUpload}
-                variant="outline"
-                className="bg-white dark:bg-gray-800 text-indigo-600 dark:text-indigo-400 border-indigo-300 dark:border-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-900"
-              >
-                <ImageIcon className="mr-2 h-4 w-4" />
-                Gallery
-              </Button>
-            </div>
-            <Button
-              onClick={handleSubmit}
-              disabled={
-                createEditPostMutation.isPending || content.trim() === ""
-              }
-              className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-6 rounded-full transition-colors"
-            >
-              {createEditPostMutation.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Posting...
-                </>
-              ) : (
-                "Post"
-              )}
-            </Button>
-          </div>
-          {createEditPostMutation.error && (
-            <p className="text-red-500 mt-2">
-              {createEditPostMutation.error instanceof Error
-                ? createEditPostMutation.error.message
-                : "An error occurred"}
-            </p>
-          )}
-        </CardContent>
-      </Card>
+        </Button>
+      </div>
     </DndProvider>
   );
 };

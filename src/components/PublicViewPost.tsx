@@ -1,26 +1,16 @@
-import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
-import { Button } from "../components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-} from "../components/ui/card";
 import { useMemo } from "react";
+import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
+import { Card, CardContent, CardHeader } from "../components/ui/card";
 
-import { formatRelativeTime } from "../utils/format-time";
 import { type Post } from "../types/feed";
+import { formatRelativeTime } from "../utils/format-time";
 import { PostMedia } from "./post-media";
-import { Share } from "lucide-react";
 
 interface PostProps {
   post: Post;
-  setIsShareOpen: (boolean: boolean) => void;
-  setSharePostId: (string: string) => void;
 }
 
 const getRandomLightColor = () => {
-  // Array of light colors with high saturation and lightness
   const lightColors = [
     "bg-pink-50",
     "bg-purple-50",
@@ -37,13 +27,11 @@ const getRandomLightColor = () => {
   return lightColors[Math.floor(Math.random() * lightColors.length)];
 };
 
-export function Post({ post, setIsShareOpen, setSharePostId }: PostProps) {
-  // Use useMemo to keep the same color for each post instance
-
+export function PublicViewPost({ post }: PostProps) {
   const backgroundColor = useMemo(() => getRandomLightColor(), [post.id]);
 
   return (
-    <>
+    <div className="max-w-2xl flex flex-col mx-auto bg-white p-4 relative min-h-screen item-center justify-center">
       <Card className={`w-full max-w-2xl ${backgroundColor} rounded-[26px]`}>
         <CardHeader className="flex-row items-center space-x-4 space-y-0">
           <Avatar className="h-10 w-10">
@@ -61,20 +49,7 @@ export function Post({ post, setIsShareOpen, setSharePostId }: PostProps) {
           <p className="whitespace-pre-wrap">{post.content}</p>
           <PostMedia media={post?.media || []} />
         </CardContent>
-        <CardFooter className="flex justify-end">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              setIsShareOpen(true);
-              setSharePostId(post.id);
-            }}
-          >
-            <Share className="h-4 w-4" />
-            <span className="ml-2">Share</span>
-          </Button>
-        </CardFooter>
       </Card>
-    </>
+    </div>
   );
 }

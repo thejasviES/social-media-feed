@@ -15,5 +15,5 @@ export const useUpdateUserProfile = () => {
   return useMutation({
     mutationFn: ({ userId, data }: { userId: string; data: UpdateProfileData }) =>
       updateUserProfile(userId, data as Profile),
-  });
+  },);
 }

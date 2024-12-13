@@ -1,23 +1,22 @@
 "use client";
 
 import { useInfiniteQuery } from "@tanstack/react-query";
+import { Fragment, useEffect, useState } from "react";
 import { useInView } from "react-intersection-observer";
-import { Fragment, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { fetchFeedPosts } from "../services/apiFeed";
-import { Spinner } from "../components/spinner";
+import CreatePostButton from "../components/CreatePostButton";
 import { Post } from "../components/post";
-import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
-import { useAuthStore } from "../store/authStore";
-import { useUserProfile } from "../hooks/useUserProfile";
-import { User } from "lucide-react";
+import ShareModal from "../components/ShareModel";
+import { Spinner } from "../components/spinner";
 import UserWelcome from "../components/UserWelcome";
+import { fetchFeedPosts } from "../services/apiFeed";
+import { useAuthStore } from "../store/authStore";
 
 export default function Feed() {
-  const navigate = useNavigate();
   const { ref, inView } = useInView();
   const { user } = useAuthStore();
-
+  const [isShareOpen, setIsShareOpen] = useState(false);
+  const [sharePostId, setSharePostId] = useState("");
+  const [domainInfo, setDomainInfo] = useState("");
   const {
     data,
     hasNextPage,
@@ -28,18 +27,21 @@ export default function Feed() {
   } = useInfiniteQuery({
     queryKey: ["feed"],
     queryFn: ({ pageParam }) =>
-      fetchFeedPosts({ cursor: pageParam, limit: 10 }),
+      fetchFeedPosts({ cursor: pageParam, limit: 20 }),
     getNextPageParam: (lastPage) => lastPage.nextCursor,
-    initialPageParam: null as string | null,
+    initialPageParam: undefined as string | undefined,
   });
 
   useEffect(() => {
+    const getDomain = () => window.location.hostname;
+
+    setDomainInfo(getDomain());
     if (inView && hasNextPage && !isFetchingNextPage) {
       fetchNextPage();
     }
   }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  if (isLoading )
+  if (isLoading)
     return (
       <div className="flex justify-center p-4">
         <Spinner />
@@ -51,16 +53,21 @@ export default function Feed() {
     );
 
   return (
-    <div className="max-w-2xl mx-auto p-4 relative min-h-screen">
+    <div className="max-w-2xl mx-auto bg-white p-4 relative min-h-screen ">
       {/* Welcome Header */}
-      <UserWelcome userId={user?.id} />
-
+      <UserWelcome userId={user?.id || ""} />
+      <h1 className="text-[24px] font-bold  mt-4 mb-4">Feeds</h1>
       {/* Feed Content */}
-      <div className="space-y-4">
+      <div className="space-y-4 ">
         {data?.pages.map((page, i) => (
           <Fragment key={i}>
             {page.data.map((post) => (
-              <Post key={post.id} post={post} />
+              <Post
+                key={post.id}
+                post={post}
+                setIsShareOpen={setIsShareOpen}
+                setSharePostId={setSharePostId}
+              />
             ))}
           </Fragment>
         ))}
@@ -72,27 +79,13 @@ export default function Feed() {
         </div>
       )}
       <div ref={ref} />
-
-      <Link
-        to="/post/create"
-        className="sticky bottom-[30px] left-full bg-blue-500 hover:bg-blue-600 text-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg transition-colors"
-        aria-label="Create new post"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-          strokeWidth={2}
-          stroke="currentColor"
-          className="w-6 h-6"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M12 4.5v15m7.5-7.5h-15"
-          />
-        </svg>
-      </Link>
+      <ShareModal
+        isOpen={isShareOpen}
+        onClose={() => setIsShareOpen(false)}
+        url={`https://${domainInfo}/post/${sharePostId}`}
+        title={"thejasvi"}
+      />
+      <CreatePostButton />
     </div>
   );
 }

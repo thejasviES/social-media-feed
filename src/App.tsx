@@ -1,7 +1,10 @@
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import {
+  createBrowserRouter,
+  RouterProvider,
+  Navigate,
+} from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
-import Home from "./pages/Home.tsx";
+
 import Profile from "./pages/Profile.tsx";
 import { SignIn } from "./pages/SignIn.tsx";
 import { SignUp } from "./pages/SignUp.tsx";
@@ -12,6 +15,9 @@ import Feed from "./pages/Feed.tsx";
 import CheckUserAuth from "./components/CheckUserAuth.tsx";
 
 import EditProfilePage from "./pages/EditProfile.tsx";
+import Post from "./pages/Post.tsx";
+import ClientError from "./components/ClientError.tsx";
+import PageNotFound from "./components/PageNotFound.tsx";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -24,11 +30,8 @@ const queryClient = new QueryClient({
 const router = createBrowserRouter([
   {
     path: "/",
-    element: (
-      <ProtectedRoute>
-        <Home />
-      </ProtectedRoute>
-    ),
+    element: <Navigate to="/feed" replace />,
+    errorElement: <PageNotFound />,
   },
   {
     path: "/profile",
@@ -37,43 +40,74 @@ const router = createBrowserRouter([
         <Profile />
       </ProtectedRoute>
     ),
+    errorElement: <ClientError />,
   },
   {
     path: "/signin",
     element: <SignIn />,
+    errorElement: <ClientError />,
   },
   {
     path: "/signup",
     element: <SignUp />,
+    errorElement: <ClientError />,
   },
   {
     path: "/post/create",
-    element: <CreatePost />,
+    element: (
+      <ProtectedRoute>
+        <CreatePost />
+      </ProtectedRoute>
+    ),
+    errorElement: <ClientError />,
   },
   {
     path: "feed",
-    element: <Feed />,
+    element: (
+      <ProtectedRoute>
+        <Feed />
+      </ProtectedRoute>
+    ),
+    errorElement: <ClientError />,
   },
   {
     path: "/profile",
-    element: <Profile />,
+    element: (
+      <ProtectedRoute>
+        <Profile />
+      </ProtectedRoute>
+    ),
+    errorElement: <ClientError />,
   },
   {
     path: "profile/edit",
-    element: <EditProfilePage />,
+    element: (
+      <ProtectedRoute>
+        <EditProfilePage />
+      </ProtectedRoute>
+    ),
+    errorElement: <ClientError />,
+  },
+  {
+    path: "post/:postId",
+    element: <Post />,
+    errorElement: <ClientError />,
+  },
+  {
+    path: "*",
+    element: <PageNotFound />,
   },
 ]);
 
 const App = () => {
   return (
-    <>
+    <main className="bg-[#FAF9F6] min-h-screen">
       <Toaster position="top-right" reverseOrder={false} />
       <QueryClientProvider client={queryClient}>
         <RouterProvider router={router} />
-        <ReactQueryDevtools initialIsOpen={false} />
         <CheckUserAuth />
       </QueryClientProvider>
-    </>
+    </main>
   );
 };
 

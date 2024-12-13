@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { AuthForm } from "../components/AuthForm";
 import { AuthFormData, User } from "../types/auth";
@@ -30,11 +30,12 @@ export function SignIn() {
 
       setUser(typedUser);
       setIsAuthenticated(true);
+      await new Promise((resolve) => setTimeout(resolve, 1000));
       toast.success("Successfully signed in!");
 
       navigate("/feed", { replace: true });
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "An error occurred");
     } finally {
       setIsLoading(false);
     }

@@ -1,17 +1,20 @@
-import { FC } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { FC } from "react";
+import { useNavigate } from "react-router-dom";
 
 interface ErrorFallbackProps {
   error: Error;
   resetErrorBoundary: () => void;
 }
 
-const ErrorFallback: FC<ErrorFallbackProps> = ({ error, resetErrorBoundary }) => {
+const ErrorFallback: FC<ErrorFallbackProps> = ({
+  error,
+  resetErrorBoundary,
+}) => {
   const navigate = useNavigate();
 
   const handleReset = () => {
     resetErrorBoundary();
-    navigate('/'); // Optional: navigate to home page on reset
+    navigate("/"); // Optional: navigate to home page on reset
   };
 
   return (

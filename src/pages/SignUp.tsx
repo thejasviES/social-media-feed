@@ -1,10 +1,10 @@
-import React, { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import { AuthForm } from "../components/AuthForm";
-import { AuthFormData } from "../types/auth";
-import toast from "react-hot-toast";
 import { UserPlus } from "lucide-react";
+import { useState } from "react";
+import toast from "react-hot-toast";
+import { Link, useNavigate } from "react-router-dom";
+import { AuthForm } from "../components/AuthForm";
 import { signup } from "../services/apiAuth";
+import { AuthFormData } from "../types/auth";
 
 export function SignUp() {
   const [isLoading, setIsLoading] = useState(false);

@@ -18,9 +18,9 @@ export const FeedComponent = () => {
   } = useInfiniteQuery({
     queryKey: ["feed"],
     queryFn: ({ pageParam }) =>
-      fetchFeedPosts({ cursor: pageParam, limit: 10 }),
+      fetchFeedPosts({ cursor: pageParam, limit: 20 }),
     getNextPageParam: (lastPage) => lastPage.nextCursor,
-    initialPageParam: null as string | null,
+    initialPageParam: undefined as string | undefined,
   });
 
   console.log("data", data);

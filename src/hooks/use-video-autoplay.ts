@@ -12,7 +12,6 @@ export function useVideoAutoplay() {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
             video.play().catch(() => {
-              // Autoplay might be blocked
             })
           } else {
             video.pause()

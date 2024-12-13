@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Dialog, DialogContent, DialogTrigger } from "../components/ui/dialog";
 import { cn } from "../lib/utils";
 import { type Media } from "../types/feed";
@@ -10,7 +9,7 @@ interface PostMediaProps {
 
 export function PostMedia({ media }: PostMediaProps) {
   const videoRef = useVideoAutoplay();
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+
   const hasMoreThanFive = media.length > 5;
 
   const getGridClassName = (count: number) => {
@@ -52,7 +51,6 @@ export function PostMedia({ media }: PostMediaProps) {
                       "aspect-square": item.aspect_ratio <= 1.6,
                     }
                   )}
-                  onClick={() => setSelectedIndex(index)}
                 >
                   {isVideo(item.url) ? (
                     <video

@@ -5,7 +5,7 @@ import { FeedQueryParams, FeedResponse, Post } from '../types/feed';
 
 export const fetchFeedPosts = async ({
   cursor,
-  limit = 10
+  limit = 20
 }: FeedQueryParams): Promise<FeedResponse> => {
   let query = supabase
     .from('feed_posts')

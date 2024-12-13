@@ -7,14 +7,15 @@ export function usePostOperations() {
   const queryClient = useQueryClient();
 
   const createEditPostMutation = useMutation({
-    mutationFn: ({ postData, postId }: { postData: PostData; postId?: string }) => 
-      createEditPost(postData, postId),
+    mutationFn: ({ postData }: { postData: PostData }) => 
+      createEditPost(postData),
     onSuccess: () => {
-      // Invalidate and refetch
-      queryClient.invalidateQueries({ queryKey: ['posts'] });
-      queryClient.invalidateQueries({ queryKey: ['userPosts'] });
+      queryClient.invalidateQueries({ queryKey: ["feed"] });
+      queryClient.invalidateQueries({ queryKey: ["user-posts"] });
     },
-  });
+  },
+
+);
 
   return {
     createEditPostMutation,
