@@ -4,23 +4,35 @@ import toast from "react-hot-toast";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthForm } from "../components/AuthForm";
 import { signup } from "../services/apiAuth";
-import { AuthFormData } from "../types/auth";
+import { AuthFormData, User } from "../types/auth";
+import { useAuthStore } from "../store/authStore";
 
 export function SignUp() {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-
+  const { setUser, setIsAuthenticated } = useAuthStore();
   const handleSignUp = async (data: AuthFormData) => {
     try {
       setIsLoading(true);
-      await signup({
+      const { user } = await signup({
         email: data.email,
         password: data.password,
         fullName: data.fullName || "",
       });
+      if (!user?.email) {
+        throw new Error("User email is missing");
+      }
+      const typedUser: User = {
+        id: user.id,
+        email: user.email,
+        created_at: user.created_at || new Date().toISOString(),
+      };
 
+      setUser(typedUser);
+      setIsAuthenticated(true);
+      await new Promise((resolve) => setTimeout(resolve, 1000));
       toast.success("Welcome to Social Media!");
-      navigate("/profile");
+      navigate("/feed", { replace: true });
     } catch (error: any) {
       toast.error(error.message);
     } finally {
